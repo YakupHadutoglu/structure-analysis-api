@@ -20,6 +20,6 @@
             "@types": ["modules/types/*"]
         }
     },
-    "include": ["src/**/*.ts", "server.ts"],
+    "include": ["src/**/*.ts", "server.ts", "src/modules/analyzer/analyzer.service.ts", "src/modules/analyzer/analyzer.routes.ts", "src/modules/analyzer/analyzer.controller.ts"],
     "exclude": ["node_modules" , "dist" , "test"]
 }
