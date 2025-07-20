@@ -18,8 +18,9 @@
             "@routes/*": ["modules/routes/*"],
             "@services/*": ["modules/services/*"],
             "@types": ["modules/types/*"]
-        }
+        },
+        "typeRoots": ["./src/types", "./node_modules/@types"]
     },
-    "include": ["src/**/*.ts", "server.ts", "src/modules/analyzer/analyzer.service.ts", "src/modules/analyzer/analyzer.routes.ts", "src/modules/analyzer/analyzer.controller.ts"],
+    "include": ["src/**/*.ts", "server.ts", "src/modules/analyzer/services/analyzer.service.ts", "src/modules/analyzer/routes/analyzer.routes.ts", "src/modules/analyzer/controllers/fileUpload.controller.ts"],
     "exclude": ["node_modules" , "dist" , "test"]
 }
