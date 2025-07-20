@@ -1,9 +1,11 @@
-import express , { Router } from 'express';
+import express, { Router } from 'express';
 import multer from 'multer';
+
 import { fileUpload } from '../controllers/fileUpload.controller'
+import { upload } from 'modules/config/multer'
 
 const router = express.Router();
 
-const upload = multer({ dest: 'uploads/' });
+router.post('/analyze', upload.single('file'), fileUpload);
 
-router.post('/analyze' , upload.single('file'), fileUpload)
+export default router;

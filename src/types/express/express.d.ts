@@ -1,18 +1,19 @@
 import 'express';
-import { file } from 'multer';
+import { Multer } from 'multer';
 
 declare global {
     namespace Express {
         interface Request {
-            file?: File,
-            files?: File[]
+            file?: Express.Multer.File,
+            files?: Express.Multer.File[]
         }
     }
 }
 
 declare module 'express-serve-static-core' {
     interface Request {
-        file?: File,
-        files?: File[]
+        file?: Express.Multer.File,
+        files?: Express.Multer.File[]
     }
 }
+
