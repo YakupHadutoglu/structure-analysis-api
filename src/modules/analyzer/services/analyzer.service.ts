@@ -1,5 +1,8 @@
 import { zipParser } from './zipParser.service';
 import { Express } from 'express';
+
+import { fileStructureAnalysis } from './fileStructureAnalysis.service';
+
 export const analyze = async (file: Express.Multer.File) => {
 
     let result: any;
@@ -7,7 +10,7 @@ export const analyze = async (file: Express.Multer.File) => {
     if (file.mimetype === 'application/zip' || file.mimetype === 'application/x-zip-compressed') {
         try {
             const resolved = await zipParser(file);
-            // result = await fileStructureAnalysis(resolved);
+            result = await fileStructureAnalysis(resolved);
             console.log("The given file was sent to the zip solution")
         } catch (error) {
             console.error("Error processing zip file: ", error);
@@ -29,6 +32,3 @@ export const analyze = async (file: Express.Multer.File) => {
     return result;
 }
 
-const fileStructureAnalysis = async (file: Express.Multer.File) => {
-    return "";
-}
