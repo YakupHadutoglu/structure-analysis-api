@@ -39,8 +39,8 @@ export const zipParser = async (file: Express.Multer.File): Promise<string> => {
         }
         throw new Error(`Failed to extract ZIP file: ${error instanceof Error ? error.message : error}`);
     } finally {
-        // Orijinal yüklenen ZIP dosyasını silmem belki
-        // Bu, sunucuda gereksiz yer kaplamasını önler ancak hata ayıklama sırasında sıkıntı çıkmasın diye.
+        //Maybe I should delete the original uploaded ZIP files //* Orijinal yüklenen ZIP dosyasını silmem belki
+        //This prevents it from taking up unnecessary space on the server, but also prevents problems when debugging. //* Bu, sunucuda gereksiz yer kaplamasını önler ancak hata ayıklama sırasında sıkıntı çıkmasın diye.
         // fs.unlinkSync(zipFilePath);
         // console.log(`Original ZIP file deleted: ${zipFilePath}`);
     }
