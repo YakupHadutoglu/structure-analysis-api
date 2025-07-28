@@ -11,11 +11,11 @@ import env from '../config/env'
  * @returns {string} The generated JWT token.
  */
 
-export type GenerateToken = (id: string, username: string, email: string, password: string) => string;
+export type GenerateToken = (id: string, username: string, email: string) => string;
 const res: Response = {} as Response; // Mocking the response object for demonstration purposes
 const req: Request = {} as Request; // Mocking the request object for demonstration purposes
 
-const generateToken = (id: string, username: string, email: string, password: string): string => {
+const generateToken = (id: string, username: string, email: string): string => {
     const token = jwt.sign({ id, username, email }, env.SECRET_KEY, { expiresIn: '7d' });
 
     console.log(`>>> Token: ${token}`);

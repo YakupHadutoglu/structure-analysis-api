@@ -6,6 +6,7 @@ import session from 'express-session';
 
 import env from './config/env';
 import routes from './routes';
+import connectDB from "./config/db";
 
 
 const app: Express = express();
@@ -14,13 +15,15 @@ const app: Express = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 app.use(session({ secret: env.SECRET_KEY, resave: false, saveUninitialized: true, cookie: { secure: false } }));
 
 //Routes
 app.use(routes);
+
+//Database connection
+connectDB();
 
 app.get('/', (req: Request , res: Response): void => {
     res.send('merhaba');
