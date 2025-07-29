@@ -7,7 +7,6 @@ import env from '../config/env'
  * @param {string} id - The user's ID.
  * @param {string} username - The user's username.
  * @param {string} email - The user's email.
- * @param {string} password - The user's password (not used in token generation).
  * @returns {string} The generated JWT token.
  */
 

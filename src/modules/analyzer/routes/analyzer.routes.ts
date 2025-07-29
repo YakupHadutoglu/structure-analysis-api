@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import multer from 'multer';
 
 import { fileUpload } from '../controllers/fileUpload.controller'
-import { upload } from 'modules/config/multer'
+import { upload } from '/home/oem/Yedek/projeler/Back-end/structure-analysis-api/src/modules/config/multer'
 
 const router = express.Router();
 

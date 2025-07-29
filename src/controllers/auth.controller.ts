@@ -4,7 +4,7 @@ import { createUser, loginUser } from '../services/auth.service';
 import jwt from 'jsonwebtoken';
 import generateToken from '../utils/jwt';
 import env from '../config/env';
-import User from 'models/User';
+import User from '../models/User';
 
 export const userCreate = async (req: Request, res: Response) => {
     const { userName, email, password } = req.body;
@@ -98,7 +98,7 @@ export const userLogout = async (req: Request, res: Response) => {
             token: null,
             user: null
         });
-        
+
     } catch (error) {
         console.error('Error during user logout:', error);
         if (error instanceof Error) return res.status(500).json(`Server Error : ${error.message}`);

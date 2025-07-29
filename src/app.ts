@@ -10,8 +10,8 @@ const app: Express = express();
 import env from './config/env';
 import routes from './routes';
 import connectDB from "./config/db";
-import limiter from "middlewares/rateLimit";
-import noCache from "middlewares/noCache";
+import limiter from "./middlewares/rateLimit";
+import noCache from "./middlewares/noCache";
 
 //Middlewares
 app.use(express.json());
