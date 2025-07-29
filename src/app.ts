@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import cors from 'cors';
 import session from 'express-session';
 import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
 
 const app: Express = express();
 
@@ -12,6 +13,7 @@ import routes from './routes';
 import connectDB from "./config/db";
 import limiter from "./middlewares/rateLimit";
 import noCache from "./middlewares/noCache";
+import { sanitizeRequest } from "./middlewares/sanitizeRequest";
 
 //Middlewares
 app.use(express.json());
@@ -28,6 +30,8 @@ app.use(session({ secret: env.SECRET_KEY, resave: false, saveUninitialized: true
 app.use(helmet());
 app.use(limiter);
 app.use(noCache);
+app.use(mongoSanitize());
+app.use(sanitizeRequest);
 
 //Routes
 app.use(routes);
