@@ -3,6 +3,7 @@ import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import cors from 'cors';
 import session from 'express-session';
+import helmet from 'helmet';
 
 import env from './config/env';
 import routes from './routes';
@@ -18,6 +19,7 @@ app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 app.use(session({ secret: env.SECRET_KEY, resave: false, saveUninitialized: true, cookie: { secure: false } }));
+app.use(helmet());
 
 //Routes
 app.use(routes);
