@@ -5,21 +5,27 @@ import cors from 'cors';
 import session from 'express-session';
 import helmet from 'helmet';
 
+const app: Express = express();
+
 import env from './config/env';
 import routes from './routes';
 import connectDB from "./config/db";
-
-
-const app: Express = express();
+import limiter from "middlewares/rateLimit";
 
 //Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cors());
+app.use(cors({
+    origin: env.NODE_ENV === 'production' ? 'https://your-production-domain.com' : 'http://localhost:3000',
+    credentials: true, // Allow cookies to be sent with requests
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(session({ secret: env.SECRET_KEY, resave: false, saveUninitialized: true, cookie: { secure: false } }));
 app.use(helmet());
+app.use(limiter);
 
 //Routes
 app.use(routes);
