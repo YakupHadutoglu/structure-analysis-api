@@ -3,9 +3,13 @@ const app: Express = express();
 
 import auth from './auth.routes';
 import analyzer from '../modules/analyzer/routes';
+import token from './token.routes';
 
-app.use(auth);
-app.use(analyzer);
+import { authentication } from '../middlewares/authenticate';
+
+app.use('/auth' , auth);
+app.use('/analyzer' , authentication , analyzer);
+app.use('/token', token);
 
 export default app;
 

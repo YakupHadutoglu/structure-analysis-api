@@ -3,8 +3,10 @@ import express, { Express, Request, Response } from 'express';
 import { createUser, loginUser } from '../services/auth.service';
 import jwt from 'jsonwebtoken';
 import generateToken from '../utils/jwt';
+import { generateAccessToken, generateRefreshToken } from '../utils/token';
 import env from '../config/env';
 import User from '../models/User';
+
 
 export const userCreate = async (req: Request, res: Response) => {
     const { userName, email, password } = req.body;
@@ -21,19 +23,28 @@ export const userCreate = async (req: Request, res: Response) => {
         const createResults = await createUser(userName, email, password);
         const user_id = createResults._id;
 
-        const token = await generateToken(user_id, userName, email);
+        // const token = await generateToken(user_id, userName, email);
 
-        res.cookie('token', token, {
+        const accessToken = await generateAccessToken(user_id, userName, email);
+        const refreshToken = generateRefreshToken(user_id, userName, email);
+
+        res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: env.NODE_ENV === 'production' ? true : false,
             sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 gün
+        });
+
         console.log("User created successfully:", createResults);
         res.status(201).json({
             message: "User created successfully",
-            token: token,
             user: {
                 id: createResults._id,
                 userName: createResults.userName,
@@ -58,19 +69,25 @@ export const userLogin = async (req: Request, res: Response) => {
 
         const user = await loginUser(email, password);
 
-        const token = generateToken(user._id, user.userName, user.email)
+        const accessToken = generateAccessToken(user._id.toString(), user.userName, user.email);
+        const refreshToken = generateRefreshToken(user._id.toString(), user.userName, user.email);
 
-        res.cookie('token', token, {
+        res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: env.NODE_ENV === 'production' ? true : false,
             sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 15 * 60 * 1000 
+        });
 
         res.status(200).json({
             message: "login succesfully",
-            token: token,
             user: {
                 id: user._id,
                 userName: user.userName,
@@ -87,12 +104,20 @@ export const userLogin = async (req: Request, res: Response) => {
 
 export const userLogout = async (req: Request, res: Response) => {
     try {
-        res.clearCookie('token', {
+        res.clearCookie('refreshToken', {
             httpOnly: true,
             secure: env.NODE_ENV === 'production' ? true : false,
             sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
+
+        res.clearCookie('accessToken', {
+            httpOnly: true,
+            secure: env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 15 * 60 * 1000
+        });
+
         res.status(200).json({
             message: "Logout succesfully",
             token: null,
