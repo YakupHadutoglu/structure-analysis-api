@@ -11,6 +11,7 @@ import env from './config/env';
 import routes from './routes';
 import connectDB from "./config/db";
 import limiter from "middlewares/rateLimit";
+import noCache from "middlewares/noCache";
 
 //Middlewares
 app.use(express.json());
@@ -26,6 +27,7 @@ app.use(cors({
 app.use(session({ secret: env.SECRET_KEY, resave: false, saveUninitialized: true, cookie: { secure: false } }));
 app.use(helmet());
 app.use(limiter);
+app.use(noCache);
 
 //Routes
 app.use(routes);
