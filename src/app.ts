@@ -28,6 +28,24 @@ app.use(cors({
 }));
 app.use(session({ secret: env.SECRET_KEY, resave: false, saveUninitialized: true, cookie: { secure: false } }));
 app.use(helmet());
+app.use(
+    helmet.contentSecurityPolicy({
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            objectSrc: ["'none'"],
+            upgradeInsecureRequests: [],
+            frameAncestors: ["'none'"],
+        }
+    }),
+    helmet.crossOriginEmbedderPolicy(),
+    helmet.crossOriginOpenerPolicy(),
+    helmet.crossOriginResourcePolicy(),
+    helmet.dnsPrefetchControl(),
+);
 app.use(limiter);
 app.use(noCache);
 app.use(mongoSanitize());
@@ -39,7 +57,7 @@ app.use(routes);
 //Database connection
 connectDB();
 
-app.get('/', (req: Request , res: Response): void => {
+app.get('/', (req: Request, res: Response): void => {
     res.send('merhaba');
 })
 
