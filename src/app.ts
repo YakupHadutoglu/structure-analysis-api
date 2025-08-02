@@ -15,6 +15,7 @@ import limiter from "./middlewares/rateLimit";
 import noCache from "./middlewares/noCache";
 import { sanitizeRequest } from "./middlewares/sanitizeRequest";
 
+
 //Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

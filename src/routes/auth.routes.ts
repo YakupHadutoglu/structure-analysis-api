@@ -3,10 +3,11 @@ const router: Router = express.Router();
 
 import { userCreate , userLogin , userLogout } from '../controllers/auth.controller';
 import { authentication } from '../middlewares/authenticate';
+import { csrfProtection } from '../middlewares/csrfProtection';
 
-router.post('/register', userCreate);
-router.post('/login', userLogin);
-router.post('/logout' , authentication , userLogout);
+router.post('/register', csrfProtection , userCreate);
+router.post('/login', csrfProtection , userLogin);
+router.post('/logout' , csrfProtection , authentication , userLogout);
 
 export default router;
 
