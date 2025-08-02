@@ -1,0 +1,4 @@
+::1 - - [02/Aug/2025:18:15:40 +0000] "POST /auth/login HTTP/1.1" 200 117 "-" "PostmanRuntime/7.43.0"
+::1 - - [02/Aug/2025:18:15:40 +0000] "POST /auth/login HTTP/1.1" 200 117 "-" "PostmanRuntime/7.43.0"
+::1 - - [02/Aug/2025:18:31:26 +0000] "POST /auth/logout HTTP/1.1" 200 57 "-" "PostmanRuntime/7.43.0"
+::1 - - [02/Aug/2025:18:31:26 +0000] "POST /auth/logout HTTP/1.1" 200 57 "-" "PostmanRuntime/7.43.0"

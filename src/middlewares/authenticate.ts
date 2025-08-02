@@ -18,13 +18,13 @@ interface jwtPayload {
 }
 
 export const authentication = async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.cookies.token;
+    const accessToken = req.cookies.accessToken;
 
-    if (!token) return res.status(401).json({ message: "Unauthorized" });
+    if (!accessToken) return res.status(401).json({ message: "Unauthorized" });
 
     try {
         // const decoded = await jwt.verify(token, env.SECRET_KEY) as jwtPayload;
-        const decoded = verifyAccessToken(token);
+        const decoded = verifyAccessToken(accessToken) as jwtPayload;
 
         // Check if the user exists in the database
         const user = await User.findById(decoded.id);

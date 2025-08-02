@@ -1,10 +1,13 @@
 import express, { Express, Request, Response } from "express";
+import fs from "fs";
+import path from "path";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import cors from 'cors';
 import session from 'express-session';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
+import morgan from 'morgan';
 
 const app: Express = express();
 
@@ -14,7 +17,13 @@ import connectDB from "./config/db";
 import limiter from "./middlewares/rateLimit";
 import noCache from "./middlewares/noCache";
 import { sanitizeRequest } from "./middlewares/sanitizeRequest";
+import logger from './utils/logger';
 
+const logDirectory = path.resolve(__dirname, '../logs');
+if (!fs.existsSync(logDirectory)) {
+    fs.mkdirSync(logDirectory);
+}
+const accessLogStream = fs.createWriteStream(path.join(logDirectory, 'access.log'), { flags: 'a', encoding: 'utf8' });
 
 //Middlewares
 app.use(express.json());
@@ -49,8 +58,17 @@ app.use(
 );
 app.use(limiter);
 app.use(noCache);
-app.use(mongoSanitize());
+// app.use(mongoSanitize());
 app.use(sanitizeRequest);
+app.use(morgan('combined', {
+    stream: {
+        write: (message) => {
+            console.log('Morgan log:', message.trim()); // terminalde gör
+            accessLogStream.write(message);
+        }
+    }
+})); // Print to the console
+app.use(morgan('combined', { stream: accessLogStream })); // Print it to the file
 
 //Routes
 app.use(routes);
