@@ -18,6 +18,7 @@ import limiter from "./middlewares/rateLimit";
 import noCache from "./middlewares/noCache";
 import { sanitizeRequest } from "./middlewares/sanitizeRequest";
 import logger from './utils/logger';
+import { requestLogger } from "./middlewares/requestLogger";
 
 const logDirectory = path.resolve(__dirname, '../logs');
 if (!fs.existsSync(logDirectory)) {
@@ -26,6 +27,8 @@ if (!fs.existsSync(logDirectory)) {
 const accessLogStream = fs.createWriteStream(path.join(logDirectory, 'access.log'), { flags: 'a', encoding: 'utf8' });
 
 //Middlewares
+app.set('trust proxy', true);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -60,15 +63,16 @@ app.use(limiter);
 app.use(noCache);
 // app.use(mongoSanitize());
 app.use(sanitizeRequest);
-app.use(morgan('combined', {
+app.use(requestLogger); app.use(morgan('combined', {
     stream: {
         write: (message) => {
             console.log('Morgan log:', message.trim()); // terminalde gör
             accessLogStream.write(message);
         }
     }
-})); // Print to the console
-app.use(morgan('combined', { stream: accessLogStream })); // Print it to the file
+}));
+app.use(morgan('combined', { stream: accessLogStream }));
+if (env.NODE_ENV === 'development') app.use(morgan('dev'));
 
 //Routes
 app.use(routes);
