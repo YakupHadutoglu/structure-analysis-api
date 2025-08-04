@@ -1,0 +1,4 @@
+2025-08-04 09:59:38 http: [POST] /auth/logout | IP: ::1 | User: Anonymous | Referer: unknown | UA: PostmanRuntime/7.43.0 | Geo: N/A, US []
+2025-08-04 09:59:55 http: [POST] /auth/login | IP: ::1 | User: Anonymous | Referer: unknown | UA: PostmanRuntime/7.43.0 | Geo: N/A, US []
+2025-08-04 10:00:07 http: [POST] /auth/logout | IP: ::1 | User: Anonymous | Referer: unknown | UA: PostmanRuntime/7.43.0 | Geo: N/A, US []
+2025-08-04 10:00:55 http: [POST] /auth/logout | IP: ::1 | User: Anonymous | Referer: unknown | UA: PostmanRuntime/7.43.0 | Geo: N/A, US []

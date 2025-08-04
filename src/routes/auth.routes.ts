@@ -7,7 +7,7 @@ import { csrfProtection } from '../middlewares/csrfProtection';
 
 router.post('/register', userCreate);
 router.post('/login', userLogin);
-router.post('/logout' , csrfProtection , authentication , userLogout);
+router.post('/logout' , authentication , userLogout);
 
 export default router;
 
