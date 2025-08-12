@@ -27,7 +27,7 @@ if (!fs.existsSync(logDirectory)) {
 const accessLogStream = fs.createWriteStream(path.join(logDirectory, 'access.log'), { flags: 'a', encoding: 'utf8' });
 
 //Middlewares
-app.set('trust proxy', true);
+//! app.set('trust proxy', true);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -61,12 +61,12 @@ app.use(
 );
 app.use(limiter);
 app.use(noCache);
-// app.use(mongoSanitize());
+//! app.use(mongoSanitize());
 app.use(sanitizeRequest);
 app.use(requestLogger); app.use(morgan('combined', {
     stream: {
         write: (message) => {
-            console.log('Morgan log:', message.trim()); // terminalde gör
+            console.log('Morgan log:', message.trim());
             accessLogStream.write(message);
         }
     }
@@ -76,6 +76,16 @@ if (env.NODE_ENV === 'development') app.use(morgan('dev'));
 
 //Routes
 app.use(routes);
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('UYARI: İşlenmeyen Promise Reddedildi:', promise, 'Neden:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('UYARI: İşlenmeyen İstisna Yakalandı:', error);
+    console.error('Stack:', error.stack);
+    // process.exit(1);
+});
 
 //Database connection
 connectDB();

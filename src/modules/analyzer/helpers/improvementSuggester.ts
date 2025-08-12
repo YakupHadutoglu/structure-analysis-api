@@ -1,14 +1,33 @@
 import { FileTree } from '../types/analyzer';
 import { ComplexityReport } from '../services/analyzeComplexity.service';
+import { detectArchitecture } from '../services/detectArchitecture.service';
 
 /**
- * Provide improvement suggestions according to the results of the project structure analysis.
- *
- * @param tree The project's file tree.
- * @param complexityReport Detailed complexity report returning from the AnalyzeComplexity service.
- * @param namingProblems List of Naming Problems Returning from Checknameing Service.
- * @returns A string sequence containing improvement suggestions.
+ * Interface for a rule used to generate improvement suggestions based on a specific condition.
+ * * Belirli bir koşula dayalı olarak iyileştirme önerileri oluşturmak için kullanılan kural arayüzü.
  */
+
+interface SuggestionRule {
+    //Unique identifier for the rule. //* Kuralın benzersiz tanımlayıcısı.
+    id: string;
+    //Unique identifier for the rule. //* Önerinin ana başlığı ve açıklaması.
+    description: string;
+    //The condition that triggers the suggestion. //* Öneriyi tetikleyen koşul.
+    condition: (tree: FileTree, complexityReport: ComplexityReport, namingProblems: string[]) => boolean;
+    //List of suggestion texts to be presented when the condition is met. //* Koşul karşılandığında sunulacak öneri metinlerinin listesi.
+    suggestions: (tree: FileTree, complexityReport: ComplexityReport, namingProblems: string[]) => string[];
+}
+
+/**
+ * Provides improvement suggestions based on the results of the project structure analysis.
+ * * Proje yapısı analiz sonuçlarına göre iyileştirme önerileri sunar.
+ *
+ * @param tree  The project's file tree. //*Projenin dosya ağacı.
+ * @param complexityReport The detailed complexity report returned from the AnalyzeComplexity service. //* AnalyzeComplexity servisinden dönen detaylı karmaşıklık raporu.
+ * @param namingProblems The list of naming problems returned from the checkNaming service. //* checkNaming servisinden dönen isimlendirme sorunları listesi.
+ * @returns İyileştirme önerilerini içeren bir string dizisi. / An array of strings containing improvement suggestions.
+ */
+
 export const suggestImprovements = (
     tree: FileTree,
     complexityReport: ComplexityReport,
@@ -16,70 +35,134 @@ export const suggestImprovements = (
 ): string[] => {
     const suggestions: string[] = [];
 
-    // --- 1. Recommendations according to the complexity report ---
+    //Detect the architecture. //* Mimariyi tespit etme
+    const arch = detectArchitecture(tree);
 
-    const generalComplexity = complexityReport.complexityScore;
-
-    //Suggestions according to the general complex score thresholds //* Genel karmaşıklık skoru eşiklerine göre öneriler
-    if (generalComplexity >= 75) {
-        suggestions.push(`🔥 Proje genel olarak çok yüksek karmaşıklığa sahip (${generalComplexity}/100). Acilen refactoring düşünülmeli, modülerizasyon ve sorumluluk ayrılığı prensiplerine odaklanılmalı.`);
-    } else if (generalComplexity >= 50) {
-        suggestions.push(`⚠️ Proje karmaşıklığı (${generalComplexity}/100) yüksek seviyede. Gelecekteki bakımı kolaylaştırmak için modüler yapılandırmaya ve sorumluluk ayrılığına daha fazla özen gösterilebilir.`);
-    } else if (generalComplexity >= 30) {
-        suggestions.push(`📈 Proje karmaşıklığı (${generalComplexity}/100) orta seviyede. Yapısal düzenlemeler ve kod kalitesi kontrolleriyle daha iyi hale getirilebilir.`);
-    }
-
-    // According to the maximum depth //* Maksimum derinliğe göre öneri
-    if (complexityReport.maxDepth >= 7) {
-        suggestions.push(`🌲 Dosya ağacı çok derin (${complexityReport.maxDepth} seviye). Daha düz bir hiyerarşi veya farklı bir modülleme yaklaşımı düşünülebilir.`);
-    } else if (complexityReport.maxDepth >= 4) {
-        suggestions.push(`🌳 Dosya ağacında derinlik (${complexityReport.maxDepth} seviye) orta seviyede. Gerekirse bazı klasörler birleştirilerek veya yeniden düzenlenerek derinlik azaltılabilir.`);
-    }
-
-    //Suggestion by the average number of files per folder //* Klasör başına ortalama dosya sayısına göre öneri
-    if (complexityReport.averageFilesPerFolder >= 15) {
-        suggestions.push(`📚 Klasör başına ortalama dosya sayısı yüksek (${complexityReport.averageFilesPerFolder.toFixed(2)}). Bu, klasörlerin çok fazla sorumluluk aldığını veya çok genel olduğunu gösterebilir. Daha spesifik klasörlere bölmeyi düşünebilirsin.`);
-    } else if (complexityReport.averageFilesPerFolder >= 8) {
-        suggestions.push(`📖 Klasör başına ortalama dosya sayısı (${complexityReport.averageFilesPerFolder.toFixed(2)}) biraz yüksek. Bazı klasörlerinizdeki dosya sayısını azaltmak okunabilirliği artırabilir.`);
-    }
-
-    //Recommendation by Total Number of Files //* Toplam dosya sayısına göre öneri
-    if (complexityReport.totalFiles >= 200) {
-        suggestions.push(`📁 Projede ${complexityReport.totalFiles} adet dosya bulunuyor. Bu büyüklükte bir projede, mimari desenleri (modüler monolitik, mikroservisler) daha belirgin uygulamak bakım kolaylığı sağlar.`);
-    } else if (complexityReport.totalFiles >= 50) {
-        suggestions.push(`📄 Projede ${complexityReport.totalFiles} adet dosya var. Yapıyı modüllere veya özelliklere ayırmak, projenin büyümesiyle birlikte bakım kolaylığını artıracaktır.`);
-    }
-
-    // --- 2. Suggestions by Naming Problems //* 2. İsimlendirme Sorunlarına Göre Öneriler ---
-    if (namingProblems.length > 0) {
-        suggestions.push(`🧠 Projenizde ${namingProblems.length} adet isimlendirme sorunu tespit edildi.`);
-        namingProblems.slice(0, namingProblems.length).forEach((problem) => {
-            suggestions.push(`   → Sorunlu yol: ${problem}. Daha tutarlı bir isimlendirme standardı (örn: kebab-case) kullanmayı düşünebilirsin.`);
-        });
-        if (namingProblems.length > 3) {
-            suggestions.push(`   ...ve ${namingProblems.length - 3} adet daha isimlendirme sorunu.`);
+    /**
+     * This structure makes it easy to add new rules and manage existing ones.
+     * List of improvement rules.
+     * * İyileştirme kurallarının listesi.
+     * * Bu yapı, yeni kuralların eklenmesini ve mevcut kuralların yönetilmesini kolaylaştırır.
+     */
+    const suggestionRules: SuggestionRule[] = [
+        // Suggestions specific to monolithic architecture. //* Monolitik mimariye özel öneriler.
+        {
+            id: 'arch_monolithic_suggestions',
+            description: 'Monolitik mimari için öneriler:',
+            condition: () => arch.type === 'monolithic' && arch.confidence > 70,
+            suggestions: () => [
+                "Projeniz güçlü bir monolitik mimari gösteriyor. Büyüme potansiyeli için:",
+                "   - Modüler monolitik yapıya geçiş için 'modules' veya 'features' klasör yapısını düşünün.",
+                "   - Kritik servisleri mikroservislere ayırmayı değerlendirin."
+            ]
+        },
+        // Suggestions specific to hybrid architecture. //* Hibrit mimariye özel öneriler.
+        {
+            id: 'arch_hybrid_suggestions',
+            description: 'Hibrit mimari için öneriler:',
+            condition: () => arch.type === 'hybrid',
+            suggestions: () => [
+                "Hibrit mimari tespit edildi. İyileştirmeler için:",
+                "   - Mimari sınırlarını netleştirin (örneğin, mikroservisler arası iletişim protokolleri).",
+                "   - Ortak bileşenler için 'shared' veya 'common' klasörü oluşturun."
+            ]
+        },
+        // Suggestions for a high general complexity score. //* Yüksek genel karmaşıklık skoru için öneriler.
+        {
+            id: 'complexity_high',
+            description: 'Yüksek karmaşıklık uyarısı:',
+            condition: () => complexityReport.complexityScore >= 75,
+            suggestions: (t, c) => [`Proje genel olarak çok yüksek karmaşıklığa sahip (${c.complexityScore}/100). Acilen refactoring düşünülmeli, modülerizasyon ve sorumluluk ayrılığı prensiplerine odaklanılmalı.`]
+        },
+        // Suggestions for a medium general complexity score. //* Orta seviye genel karmaşıklık skoru için öneriler.
+        {
+            id: 'complexity_medium',
+            description: 'Orta seviye karmaşıklık uyarısı:',
+            condition: () => complexityReport.complexityScore >= 50,
+            suggestions: (t, c) => [`Proje karmaşıklığı (${c.complexityScore}/100) yüksek seviyede. Gelecekteki bakımı kolaylaştırmak için modüler yapılandırmaya ve sorumluluk ayrılığına daha fazla özen gösterilebilir.`]
+        },
+        // Suggestions for file tree depth. //* Dosya ağacı derinliği için öneriler.
+        {
+            id: 'depth_deep',
+            description: 'Dosya ağacı derinliği önerileri:',
+            condition: () => complexityReport.maxDepth >= 7,
+            suggestions: (t, c) => [`Dosya ağacı çok derin (${c.maxDepth} seviye). Daha düz bir hiyerarşi veya farklı bir modülleme yaklaşımı düşünülebilir.`]
+        },
+        {
+            id: 'depth_medium',
+            description: 'Dosya ağacı derinliği önerileri:',
+            condition: () => complexityReport.maxDepth >= 4,
+            suggestions: (t, c) => [`Dosya ağacında derinlik (${c.maxDepth} seviye) orta seviyede. Gerekirse bazı klasörler birleştirilerek veya yeniden düzenlenerek derinlik azaltılabilir.`]
+        },
+        // Suggestions for average number of files per folder. //* Klasör başına ortalama dosya sayısı için öneriler.
+        {
+            id: 'files_per_folder_high',
+            description: 'Klasör başına dosya sayısı önerileri:',
+            condition: () => complexityReport.averageFilesPerFolder >= 15,
+            suggestions: (t, c) => [`Klasör başına ortalama dosya sayısı yüksek (${c.averageFilesPerFolder.toFixed(2)}). Bu, klasörlerin çok fazla sorumluluk aldığını gösterebilir. Daha spesifik klasörlere bölmeyi düşünebilirsiniz.`]
+        },
+        // Suggestions for naming problems. //* İsimlendirme sorunları için öneriler.
+        {
+            id: 'naming_problems_found',
+            description: 'İsimlendirme sorunları:',
+            condition: (t, c, n) => n.length > 0,
+            suggestions: (t, c, n) => {
+                const namingSuggestions = [`Projenizde ${n.length} adet isimlendirme sorunu tespit edildi.`, `İsimlendirme standartlarına uymak, kod okunabilirliğini ve anlaşılırlığını önemli ölçüde artırır.`];
+                n.forEach((problem) => {
+                    namingSuggestions.push(`   → Sorunlu yol: ${problem}. Daha tutarlı bir isimlendirme standardı (örn: kebab-case) kullanmayı düşünebilirsiniz.`);
+                });
+                return namingSuggestions;
+            }
+        },
+        // General structural suggestions. //* Genel yapısal öneriler.
+        {
+            id: 'general_single_root_folder',
+            description: 'Yapısal sadelik önerisi:',
+            condition: (t) => {
+                const rootKeys = Object.keys(t);
+                return rootKeys.length === 1 && t[rootKeys[0]] !== null && Object.keys(t[rootKeys[0]] as FileTree).length > 0;
+            },
+            suggestions: (t) => {
+                const rootKeys = Object.keys(t);
+                return [`Projenin kök dizininde sadece tek bir ana klasör (${rootKeys[0]}) bulunuyor. İsterseniz bu klasörü kaldırıp içeriğini doğrudan kök dizine taşıyarak dosya yapısını sadeleştirebilirsiniz.`];
+            }
+        },
+        {
+            id: 'general_initial_project',
+            description: 'Başlangıç aşaması önerisi:',
+            condition: (t, c) => c.totalFiles < 5 && c.totalFolders < 2,
+            suggestions: () => [`Proje henüz başlangıç aşamasında görünüyor. Temel dosya yapısını belirlerken gelecekteki ölçeklenebilirliği düşünmek iyi olacaktır.`]
+        },
+        // Suggestion for .gitignore file. //* .gitignore dosyası için öneri.
+        {
+            id: 'general_gitignore_missing',
+            description: '.gitignore uyarısı:',
+            condition: (t) => !('.gitignore' in t),
+            suggestions: () => [`Git depolarına gereksiz dosyaları (örn: node_modules, dist) eklememek için bir ".gitignore" dosyası oluşturun.`]
+        },
+        // Suggestion for README.md file. //* README.md dosyası için öneri.
+        {
+            id: 'general_readme_missing',
+            description: 'README.md uyarısı:',
+            condition: (t) => !('README.md' in t),
+            suggestions: () => [`Projenizin amacını, kurulumunu ve kullanımını açıklayan bir "README.md" dosyası ekleyin.`]
+        },
+        // Suggestion to consolidate source code in a single folder. //* Kaynak kodunun bir klasörde toplanması için öneri.
+        {
+            id: 'general_src_folder_missing',
+            description: 'Klasör yapısı önerisi:',
+            condition: (t) => ('package.json' in t) && !('src' in t || 'app' in t),
+            suggestions: () => [`Projenin kaynak kodlarını "src" veya "app" gibi bir klasör altında toplamak, daha düzenli bir yapı sağlar.`]
         }
-        suggestions.push(`💡 İsimlendirme standartlarına uymak, kod okunabilirliğini ve anlaşılırlığını önemli ölçüde artırır.`);
-    }
+    ];
 
-    // --- 3. General Structural Suggestions //* 3. Genel Yapısal Öneriler ---
-    //It is just a root folder (root/my-project/...)
-    const rootKeys = Object.keys(tree);
-    if (rootKeys.length === 1 && tree[rootKeys[0]] !== null && Object.keys(tree[rootKeys[0]] as FileTree).length > 0) {
-        suggestions.push(`📦 Projenin kök dizininde sadece tek bir ana klasör (${rootKeys[0]}) bulunuyor. Bu yapı, gereksiz bir kapsülleme katmanı oluşturabilir. İstersen bu klasörü kaldırıp içeriğini doğrudan kök dizine taşıyarak dosya yapısını sadeleştirebilirsin.`);
-    }
-
-    //Very few files/folders (ie the initial level project) //* Çok az dosya/klasör olması durumu (yani henüz başlangıç seviyesi proje)
-    if (complexityReport.totalFiles < 5 && complexityReport.totalFolders < 2) {
-        suggestions.push(`🌱 Proje henüz başlangıç aşamasında görünüyor. Temel dosya yapısını belirlerken gelecekteki ölçeklenebilirliği düşünmek iyi olacaktır.`);
-    }
-
-    if ('node_modules' in tree) {
-        suggestions.push('⛔ "node_modules" klasörünü git repolarına dahil etmemeyi unutmayın. `.gitignore` kullanın.');
-    }
-    if ('package.json' in tree && !('src' in tree || 'app' in tree)) {
-        suggestions.push('📁 Projenin kaynak kodlarını "src" veya "app" gibi bir klasör altında toplamak, daha düzenli bir yapı sağlar.');
-    }
+    // Iterate over the defined rules, check conditions, and collect suggestions. //* Tanımlanan kurallar üzerinde dönerek koşulları kontrol et ve önerileri topla.
+    suggestionRules.forEach(rule => {
+        if (rule.condition(tree, complexityReport, namingProblems)) {
+            suggestions.push(...rule.suggestions(tree, complexityReport, namingProblems));
+        }
+    });
 
     return suggestions;
 };
+

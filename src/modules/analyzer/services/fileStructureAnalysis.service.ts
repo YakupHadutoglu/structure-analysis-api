@@ -1,105 +1,167 @@
 import { zipParser } from './zipParser.service';
+import { tarGzParser } from './tarGzParser.service';
 import path from 'path';
 import { detectArchitecture } from './arthitectureDetector.service';
 import { generateTree } from './treeGenerator.service';
 import { analyzeComplexity } from './analyzeComplexity.service';
-import { checkNaming } from '../helpers/namingChecker';
+import { checkNaming , NamingCheckResult } from '../helpers/namingChecker';
 import { suggestImprovements } from '../helpers/improvementSuggester';
+import { analyzeDependencies, DependencyReport } from './dependencyAnalyzer.service';
+import { FileTree, ArchitectureGuess } from '../types/analyzer';
+import { ComplexityReport } from './analyzeComplexity.service';
+import { performance } from 'perf_hooks';
+import fs from 'fs-extra';
 
-import { FileTree } from '../types/analyzer'; //default FileTree type
-import { ArchitectureGuess } from '../types/analyzer'; //detectArchitecture return type
-import { ComplexityReport } from './analyzeComplexity.service'; // analyzeComplexity return type
-
-// Return type that includes all analysis results
+/**
+ * Defines the comprehensive results of the file analysis.
+ * * Dosya analizinin kapsamlı sonuçlarını tanımlar.
+ */
 export interface FileAnalysisResult {
     architecture: ArchitectureGuess;
     fileTree: FileTree;
     complexityReport: ComplexityReport;
-    namingProblems: string[];
+    namingProblems: NamingCheckResult;
     suggestions: string[];
+    dependencyReport: DependencyReport;
+    performanceMetrics: {
+        totalTime: number;
+        steps: Record<string, number>;
+    };
 }
 
-/**
- * It analyzes the structure of the given file or ZIP file and provides a comprehensive report. //* Verilen dosya veya ZIP dosyasının yapısını analiz eder ve kapsamlı bir rapor sunar.
- *
- * @param file The file object loaded by Multer (if ZIP) or a direct project directory path.  //*Multer tarafından yüklenen dosya objesi (ZIP ise) veya doğrudan bir proje dizini yolu.
- * @returns A comprehensive FileAnalysisResult object.
- * @throws If an error occurs during analysis, it throws an error.
- */
-export const fileStructureAnalysis = async (file: string | Express.Multer.File): Promise<FileAnalysisResult> => {
-    let projectPath: string;
-    let initialFileName: string | undefined;
+console.log('[ANALYSIS] Performing naming checks...');
 
-    //0. Specify the project path and extract the ZIP file //* 0. Proje yolunu belirle ve ZIP dosyası ise çıkar
-    if (typeof file === 'string') {
-        //If a direct directory path is given //* Eğer doğrudan bir dizin yolu verilmişse
-        projectPath = file;
-        initialFileName = path.basename(file); //For informational purposes only //* Sadece bilgilendirme amaçlı
-    } else {
-        // If it is a file uploaded by Multer //*Eğer Multer tarafından yüklenen bir dosya ise
-        initialFileName = file.originalname;
+export const fileStructureAnalysis = async (input: string | Express.Multer.File): Promise<FileAnalysisResult> => {
+    const startTime = performance.now();
+    const metrics: Record<string, number> = {};
+    let stepStart: number;
+    let tempDirs: string[] = [];
 
-        if (file.mimetype === 'application/zip' || file.mimetype === 'application/x-zip-compressed') {
-            console.log(`ZIP file detected: ${file.originalname}. being removed...`);
-            try {
-                //The path to the extracted directory returned by zipParser //* zipParser'dan dönen, çıkarılan dizinin yoludur
-                projectPath = await zipParser(file);
-                console.log(`ZIP file successfully extracted: ${projectPath}`);
-            } catch (error) {
-                console.error(`Error occurred while extracting ZIP file: ${error}`);
-                throw new Error(`Error occurred while processing the ZIP file: ${initialFileName}`);
-            }
+    try {
+        let projectPath: string;
+        let fileName: string | undefined;
+
+        //1. Set the type of input and set the project path //* 1. Girdi türünü belirle ve proje yolunu ayarla
+        stepStart = performance.now();
+        if (typeof input === 'string') {
+            projectPath = input;
+            fileName = path.basename(input);
+            console.log(`[ANALYSIS] Direct directory path detected: ${projectPath}`);
         } else {
-            projectPath = path.dirname(file.path); //The folder where the file is located //* Dosyanın bulunduğu klasör
-            console.warn(`** ZIP olmayan bir dosya (${file.originalname}) alındı. Analiz sadece dosyanın bulunduğu klasör üzerinden yapılacaktır.`);
-            console.warn(`A non -jump file (${file.originalname}) was taken. The analysis will only be done through the folder where the file is located.`);
+            fileName = input.originalname;
+            console.log(`[ANALYSIS] File detected: ${fileName}`);
+
+            //Expanded MIME type control//* Genişletilmiş MIME tipi kontrolü
+            const archiveTypes = {
+                zip: ['application/zip', 'application/x-zip-compressed'],
+                tar: ['application/x-tar'],
+                gz: ['application/gzip', 'application/x-gzip'],
+                rar: ['application/vnd.rar', 'application/x-rar-compressed']
+            };
+
+            if (archiveTypes.zip.includes(input.mimetype)) {
+                console.log(`[ANALYSIS] Extracting ZIP file: ${fileName}`);
+                projectPath = await zipParser(input);
+                tempDirs.push(projectPath);
+            }
+            else if (archiveTypes.tar.includes(input.mimetype) || archiveTypes.gz.includes(input.mimetype)) {
+                console.log(`[ANALYSIS] Extracting TAR.GZ file: ${fileName}`);
+                projectPath = await tarGzParser(input);
+                tempDirs.push(projectPath);
+            }
+            else {
+                projectPath = path.dirname(input.path);
+                console.log(`[ANALYSIS] Non-archive file. Analysis folder: ${projectPath}`);
+            }
+        }
+
+        if (!projectPath || !fs.existsSync(projectPath)) {
+            throw new Error("Project path could not be determined or does not exist");
+        }
+
+        metrics.inputProcessing = performance.now() - stepStart;
+
+        //2. Create File Tree //* 2. Dosya ağacı oluştur
+        stepStart = performance.now();
+        console.log('[ANALYSIS] Generating file tree...');
+        const fileTree = await generateTree(projectPath);
+        console.log('[ANALYSIS] File tree successfully generated.');
+        metrics.treeGeneration = performance.now() - stepStart;
+
+        //3. Architectural Analysis //* 3. Mimari analizi
+        stepStart = performance.now();
+        console.log('[ANALYSIS] Starting architecture analysis...');
+        const architecture = detectArchitecture(fileTree);
+        console.log(`[ANALYSIS] Architecture analysis completed. Type: ${architecture.type}`);
+        metrics.architectureAnalysis = performance.now() - stepStart;
+
+        //4. complexity analysis //* 4. Karmaşıklık analizi
+        stepStart = performance.now();
+        console.log('[ANALYSIS] Starting complexity analysis...');
+        const complexityReport = analyzeComplexity(fileTree);
+        console.log(`[ANALYSIS] Complexity analysis completed. Score: ${complexityReport.complexityScore}`);
+        metrics.complexityAnalysis = performance.now() - stepStart;
+
+        //5. Addiction Analysis //* 5. Bağımlılık analizi
+        stepStart = performance.now();
+        console.log('[ANALYSIS] Starting dependency analysis...');
+        const dependencyReport = await analyzeDependencies(projectPath);
+        console.log('[ANALYSIS] Dependency analysis completed.');
+        metrics.dependencyAnalysis = performance.now() - stepStart;
+
+        //6. NAME PROBLEMS //* 6. İsimlendirme problemleri
+        stepStart = performance.now();
+        console.log('[ANALYSIS] Performing naming checks...');
+        const namingProblems:FileAnalysisResult['namingProblems'] = checkNaming(fileTree);
+        console.log(`[ANALYSIS] Found ${namingProblems.errors.length} naming problems.`);
+        metrics.namingCheck = performance.now() - stepStart;
+
+        //7. Improvement Suggestions //* 7. İyileştirme önerileri
+        stepStart = performance.now();
+        console.log('[ANALYSIS] Generating improvement suggestions...');
+        const suggestions = suggestImprovements(fileTree, complexityReport, namingProblems.errors);
+        console.log(`[ANALYSIS] ${suggestions.length} suggestions created.`);
+        metrics.suggestionGeneration = performance.now() - stepStart;
+
+        //8. Calculate performance metrics //* 8. Performans metriklerini hesapla
+        const totalTime = performance.now() - startTime;
+
+        return {
+            architecture,
+            fileTree,
+            complexityReport,
+            namingProblems,
+            suggestions,
+            dependencyReport,
+            performanceMetrics: {
+                totalTime,
+                steps: metrics
+            } as FileAnalysisResult['performanceMetrics']
+        };
+
+    } catch (error) {
+        console.error('[ANALYSIS ERROR] Process failed:', error);
+
+        //Clean temporary files //* Geçici dosyaları temizle
+        tempDirs.forEach(dir => {
+            try {
+                fs.removeSync(dir);
+                console.log(`[CLEANUP] Removed temp directory: ${dir}`);
+            } catch (cleanupError) {
+                console.error('[CLEANUP ERROR] Failed to remove temp directory:', cleanupError);
+            }
+        });
+
+        throw new Error(`Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+        //Release resources //* Kaynakları serbest bırak
+        if (typeof input !== 'string' && 'path' in input) {
+            try {
+                await fs.remove(input.path);
+                console.log(`[CLEANUP] Removed uploaded file: ${input.path}`);
+            } catch (cleanupError) {
+                console.error('[CLEANUP ERROR] Failed to remove uploaded file:', cleanupError);
+            }
         }
     }
-
-    // Start analysis after the project path is determined //* Proje yolu belirlendikten sonra analize başlanır
-    if (!projectPath) {
-        throw new Error("The project path to be analyzed could not be determined.");
-    }
-
-    let generatedFileTree: FileTree;
-    try {
-        //1. Folder/File Tree Creating //* 1. Klasör/dosya ağacı oluşturma
-        //It creates a tree from the real file system using ProjectPath. //*projectPath'i kullanarak gerçek dosya sisteminden ağacı oluşturur
-        generatedFileTree = await generateTree(projectPath); // generateTree async ise await kullanın
-        console.log("File Tree created succesfully.");
-    } catch (error) {
-        console.error(`File tree created has been error: ${error}`);
-        throw new Error(`File tree created has been error: ${error instanceof Error ? error.message : String(error)}`);
-    }
-
-    // 2. Architectural Analysis //* 2. Mimari analizi
-    const architecture = detectArchitecture(generatedFileTree);
-    console.log("Architectural analysis completed:", architecture.type);
-
-    // 3. complexity analysis //* 3. Karmaşıklık analizi
-    const complexityReport = analyzeComplexity(generatedFileTree);
-    console.log("Karmaşıklık analizi tamamlandı. Skor:", complexityReport.complexityScore);
-
-    // 4. NAME CONTROLS //* 4. İsimlendirme kontrolleri
-    const namingProblems = checkNaming(generatedFileTree);
-    if (namingProblems.length > 0) {
-        console.warn(`${namingProblems.length} A naming problem was found.`);
-    } else {
-        console.log("** İsimlendirme sorunu bulunamadı.");
-        console.log("No naming issue found");
-    }
-
-    // 5. Improvement Suggestions //* 5. İyileştirme önerileri
-    const suggestions = suggestImprovements(generatedFileTree, complexityReport, namingProblems);
-    console.log("** adet iyileştirme önerisi oluşturuldu.");
-    console.log(`${suggestions.length} Menstrual improvement proposal was created.`);
-
-    // 6. Turn them all in an object //* 6. Hepsini bir nesnede döndür
-    return {
-        architecture,
-        fileTree: generatedFileTree, // We return here
-        complexityReport,
-        namingProblems,
-        suggestions,
-    };
 };

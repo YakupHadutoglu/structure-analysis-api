@@ -21,14 +21,14 @@ type LogEntry = {
 
 export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
     const ip =
-        (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ||  // ilk ip al
+        (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || 
         req.connection?.remoteAddress ||
         req.socket?.remoteAddress ||
         req.ip ||
         'unknown';
 
     const geo = geoip.lookup(
-        ip === '::1' || ip === '127.0.0.1' ? '8.8.8.8' : ip // Lokal IP ise test ip kullan
+        ip === '::1' || ip === '127.0.0.1' ? '8.8.8.8' : ip
     );
 
     const method = req.method;

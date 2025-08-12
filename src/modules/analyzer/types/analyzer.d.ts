@@ -1,6 +1,18 @@
-export interface FileTree {
-    [key: string]: FileTree | null;
+export type FileTree = {
+    [key: string]: FileTree | FileMeta | SymlinkMeta | null;
+};
+
+export interface FileMeta {
+    type: 'file';
+    size: number;
+    modified: Date;
 }
+
+export interface SymlinkMeta {
+    type: 'symlink';
+    target: string;
+}
+
 
 export interface ArchitectureGuess {
     type: string;
@@ -26,4 +38,30 @@ export interface ArchitectureDefinition {
     id: string;
     name: string;
     description: string;
+}
+
+export type ArchitectureDetails = Record<string, number>
+export interface ArchitectureDetails {
+    monolithic: number;
+    microservices: number;
+    serverless: number;
+    eventDriven: number;
+    hybrid: number;
+    cleanArch: number;
+    cqrs: number;
+    microFrontend: number;
+    ddd: number;
+    modularMonolithic: number;
+    hexagonal: number;
+    eventSourcing: number;
+    soa: number;
+    apiFirst: number;
+    tdd: number;
+    bff: number;
+    functional: number;
+    reactive: number;
+    domainDriven: number;
+    microKernel: number;
+    layered: number;
+    nTier: number;
 }

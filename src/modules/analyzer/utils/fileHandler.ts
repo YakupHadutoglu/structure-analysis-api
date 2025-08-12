@@ -3,21 +3,26 @@ import fs from 'fs';
 import { Express } from "express";
 
 export const getTargetFolder = (file: Express.Multer.File): string => {
-
-    // const uploadsRoot = '/src/uploads/zips';
-    const uploadsRoot = path.join(process.cwd() , 'src/uploads/zips');
-
-    const isZip = [
+    const uploadsRoot = path.join(process.cwd(), 'src/uploads');
+    const zipTypes = [
         'application/zip',
         'application/x-zip-compressed',
-        'zip'
-    ].some(type => file.mimetype.includes(type) || path.extname(file.originalname).toLocaleLowerCase() === '.zip');
+        'application/zip-compressed'
+    ];
 
-    return path.join(
-        uploadsRoot,
-        isZip ? 'zip' : 'file',
-        file.originalname
-    )
+    const tarTypes = [
+        'application/gzip',
+        'application/x-gzip',
+        'application/tar+gzip'
+    ];
+
+    if (zipTypes.includes(file.mimetype)) {
+        return path.join(uploadsRoot, 'zips');
+    } else if (tarTypes.includes(file.mimetype)) {
+        return path.join(uploadsRoot, 'tars');
+    } else {
+        return path.join(uploadsRoot, 'files');
+    }
 }
 
 export const ensureFolderExits = (folderPath: string) => {

@@ -1,14 +1,28 @@
 import { ArchitectureIndicator, ArchitectureDefinition, FileTree } from '../analyzer/types/analyzer';
 
-const hasDirectFolder = (name: string, tree: FileTree) => name in tree && tree[name] !== null;
-const hasFile = (name: string, tree: FileTree) => name in tree && tree[name] === null;
+// Helper functions for checking file tree structure. //* Dosya ağacı yapısını kontrol etmek için yardımcı fonksiyonlar.
+const hasDirectFolder = (name: string, subtree: FileTree): boolean => {
+    // Check for both existence and if it's an object (subfolder). //* Hem varlığını hem de bir nesne (alt klasör) olduğunu kontrol et.
+    return name in subtree && subtree[name] !== null && typeof subtree[name] === 'object';
+};
 
+const hasFile = (name: string, subtree: FileTree): boolean => {
+    // Check for existence and if its value is null (file). //* Varlığını ve değerinin null (dosya) olduğunu kontrol et.
+    return name in subtree && subtree[name] === null;
+};
+
+// A reusable helper function. //* Yeniden kullanılabilir bir helper fonksiyonu.
 const hasNestedFolders = (parentName: string, subfolderNames: string[], tree: FileTree): boolean => {
     if (!hasDirectFolder(parentName, tree)) return false;
     const parentFolder = tree[parentName] as FileTree;
+    // Check if every subfolder in the list exists within the parent folder. //* Listedeki her bir alt klasörün ana klasör içinde var olup olmadığını kontrol et.
     return subfolderNames.every(name => hasDirectFolder(name, parentFolder));
 };
 
+/**
+ * Supported architectural styles with their definitions.
+ * * Desteklenen mimari stilleri ve tanımları.
+ */
 export const ARCHITECTURES: ArchitectureDefinition[] = [
     { id: 'monolithic', name: 'Monolitik Mimari', description: 'Tek bir kod tabanında birleşik uygulama.' },
     { id: 'modularMonolithic', name: 'Modüler Monolitik Mimari', description: 'Modüllere ayrılmış, ancak tek bir deploy edilebilir birim.' },
@@ -18,12 +32,16 @@ export const ARCHITECTURES: ArchitectureDefinition[] = [
     { id: 'cleanArch', name: 'Temiz Mimari / Portlar ve Adaptörler', description: 'Katmanlı, dış bağımlılıklardan izole edilmiş çekirdek mantık.' },
     { id: 'cqrs', name: 'CQRS (Command Query Responsibility Segregation)', description: 'Okuma ve yazma işlemlerini ayıran mimari.' },
     { id: 'microFrontend', name: 'Mikro Ön Uç (Micro-Frontend) Mimarisi', description: 'Bağımsız olarak geliştirilebilen ve deploy edilebilen UI parçaları.' },
+    { id: 'ddd', name: 'Domain-Driven Design (DDD)', description: 'İş alanına odaklanan ve domain modelini esas alan mimari.' },
     { id: 'hybrid', name: 'Hibrit Mimari', description: 'Birden fazla mimari stilinin birleşimi.' },
 ];
 
-// --- Architectural Indicators //* Mimari Göstergeleri ---
+/**
+ * Architectural indicators used to score different architectures.
+ * * Her bir mimariyi puanlamak için kullanılan mimari göstergeleri.
+ */
 export const ARCHITECTURE_INDICATORS: ArchitectureIndicator[] = [
-    // --- Monolithic architectural indicators //* Monolitik Mimari Göstergeleri ---
+    // Monolithic Architecture Indicators //* Monolitik Mimari Göstergeleri
     {
         id: 'mono_central_services',
         description: 'Kök dizinde merkezi "services" klasörü',
@@ -53,7 +71,7 @@ export const ARCHITECTURE_INDICATORS: ArchitectureIndicator[] = [
         matchFunction: (t) => hasDirectFolder('utils', t) || hasDirectFolder('common', t)
     },
 
-    // --- Modular monolithic architectural indicators //* Modüler Monolitik Mimari Göstergeleri ---
+    // Modular Monolithic Architecture Indicators //* Modüler Monolitik Mimari Göstergeleri
     {
         id: 'modular_modules_folder',
         description: 'Kök dizinde "modules" klasörü',
@@ -62,21 +80,26 @@ export const ARCHITECTURE_INDICATORS: ArchitectureIndicator[] = [
         matchFunction: (t) => hasDirectFolder('modules', t)
     },
     {
-        id: 'modular_nested_modules',
-        description: '"modules" altında birden fazla alt modül (örn: user, auth, product)',
-        score: 30,
-        architectures: ['modularMonolithic'],
-        matchFunction: (t) => hasNestedFolders('modules', ['user', 'auth', 'product'], t)
-    },
-    {
         id: 'modular_features_folder',
         description: 'Kök dizinde "features" klasörü',
         score: 40,
         architectures: ['modularMonolithic'],
         matchFunction: (t) => hasDirectFolder('features', t)
     },
+    {
+        id: 'modular_nested_modules',
+        description: '"modules" altında birden fazla alt modül (örn: user, auth, product)',
+        score: 30,
+        architectures: ['modularMonolithic'],
+        matchFunction: (t) => {
+            if (!hasDirectFolder('modules', t)) return false;
+            const modulesFolder = t['modules'] as FileTree;
+            const subfolders = Object.keys(modulesFolder).filter(key => hasDirectFolder(key, modulesFolder));
+            return subfolders.length >= 2;
+        }
+    },
 
-    // --- MicroServis Architecture Indicators //* Mikroservis Mimarisi Göstergeleri ---
+    // Microservices Architecture Indicators //* Mikroservis Mimarisi Göstergeleri
     {
         id: 'micro_multi_service_folders',
         description: 'Kök dizinde birden fazla servis veya domain odaklı klasör (örn: auth-service, order-service)',
@@ -84,7 +107,11 @@ export const ARCHITECTURE_INDICATORS: ArchitectureIndicator[] = [
         architectures: ['microservices'],
         matchFunction: (t) => {
             const topLevelFolders = Object.keys(t).filter(key => t[key] !== null);
-            return topLevelFolders.some(folder => folder.includes('-service') || folder.includes('Service')) && topLevelFolders.length > 2;
+            // Check for multiple folders that contain "service" or "app" in their names. //* İsimlerinde "service" veya "app" içeren birden fazla klasör olup olmadığını kontrol et.
+            const serviceFolders = topLevelFolders.filter(folder =>
+                folder.includes('-service') || folder.includes('Service') || folder.includes('-app') || folder.includes('App')
+            );
+            return serviceFolders.length >= 2;
         },
     },
     {
@@ -102,7 +129,7 @@ export const ARCHITECTURE_INDICATORS: ArchitectureIndicator[] = [
         matchFunction: (t) => hasDirectFolder('shared', t) || hasDirectFolder('libs', t)
     },
 
-    // --- Serverless Indicators without server //* Sunucusuz Mimari (Serverless) Göstergeleri ---
+    // Serverless Architecture Indicators //* Sunucusuz Mimari (Serverless) Göstergeleri
     {
         id: 'serverless_functions_folder',
         description: 'Kök dizinde "functions" veya "handlers" klasörü',
@@ -118,7 +145,7 @@ export const ARCHITECTURE_INDICATORS: ArchitectureIndicator[] = [
         matchFunction: (t) => hasFile('serverless.yml', t) || hasFile('template.yaml', t) || hasFile('sam-template.yaml', t)
     },
 
-    // --- Event -oriented architectural indicators //* Olay Odaklı Mimari Göstergeleri ---
+    //Event-Driven Architecture Indicators //* Olay Odaklı Mimari Göstergeleri
     {
         id: 'event_events_folder',
         description: 'Kök dizinde "events" klasörü',
@@ -141,7 +168,7 @@ export const ARCHITECTURE_INDICATORS: ArchitectureIndicator[] = [
         matchFunction: (t) => hasFile('kafka.config.ts', t) || hasFile('rabbitmq.js', t) || hasFile('sqs.ts', t)
     },
 
-    // --- Clean Architecture /Ports and Adapters Indicators //* Temiz Mimari / Portlar ve Adaptörler Göstergeleri ---
+    // Clean Architecture /Ports and Adapters Indicators //* Temiz Mimari / Portlar ve Adaptörler Göstergeleri
     {
         id: 'clean_adapters_ports',
         description: '"adapters" ve "ports" klasörlerinin varlığı',
@@ -157,7 +184,7 @@ export const ARCHITECTURE_INDICATORS: ArchitectureIndicator[] = [
         matchFunction: (t) => hasDirectFolder('domain', t) && hasDirectFolder('application', t) && hasDirectFolder('infrastructure', t)
     },
 
-    // --- CQRS Indicators //* CQRS Göstergeleri ---
+    // CQRS Indicators //* CQRS Göstergeleri
     {
         id: 'cqrs_commands_queries',
         description: '"commands" ve "queries" klasörlerinin varlığı',
@@ -173,7 +200,7 @@ export const ARCHITECTURE_INDICATORS: ArchitectureIndicator[] = [
         matchFunction: (t) => hasDirectFolder('commandHandlers', t) && hasDirectFolder('queryHandlers', t)
     },
 
-    // --- Micro-Frontend) Architecture Indicators //* Mikro Ön Uç (Micro-Frontend) Mimarisi Göstergeleri ---
+    // Micro-Frontend Architecture Indicators //* Mikro Ön Uç (Micro-Frontend) Mimarisi Göstergeleri
     {
         id: 'mfe_microfrontends_folder',
         description: 'Kök dizinde "microfrontends" veya "mfes" klasörü',
@@ -187,5 +214,35 @@ export const ARCHITECTURE_INDICATORS: ArchitectureIndicator[] = [
         score: 20,
         architectures: ['microFrontend'],
         matchFunction: (t) => hasDirectFolder('shared-ui', t) || hasDirectFolder('design-system', t)
+    },
+
+    // Domain-Driven Design (DDD) Indicators //* Alan Odaklı Tasarım (DDD) Göstergeleri
+    {
+        id: 'ddd_domain_folder',
+        description: 'Merkezi "domain" klasörü ve içinde iş nesneleri',
+        score: 40,
+        architectures: ['ddd'],
+        matchFunction: (t) => hasDirectFolder('domain', t) && Object.keys(t.domain as FileTree).length > 0
+    },
+    {
+        id: 'ddd_aggregates_repositories',
+        description: '"domain" içinde "aggregates" ve "repositories" klasörleri',
+        score: 30,
+        architectures: ['ddd'],
+        matchFunction: (t) => hasNestedFolders('domain', ['aggregates', 'repositories'], t)
+    },
+    {
+        id: 'ddd_services_factories',
+        description: '"domain" içinde "services" ve "factories" klasörleri',
+        score: 20,
+        architectures: ['ddd'],
+        matchFunction: (t) => hasNestedFolders('domain', ['services', 'factories'], t)
+    },
+    {
+        id: 'ddd_repositories_pattern',
+        description: '"repositories" veya "data" klasörü, iş mantığından ayrılmış',
+        score: 25,
+        architectures: ['ddd'],
+        matchFunction: (t) => hasDirectFolder('repositories', t) || hasDirectFolder('data', t)
     },
 ];

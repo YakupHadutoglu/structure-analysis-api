@@ -2,7 +2,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=node,visualstudiocode,virtualenv
 
 ### Node ###
-# Logs
+Logs
 
 npm-debug.log*
 yarn-debug.log*
