@@ -1,3 +1,4 @@
+For Turkish documentation, see [README.tr.md](README.tr.md)
 
 # Structure Analysis API — English Documentation
 
