@@ -1,56 +1,59 @@
+# Structure Analysis API — Türkçe Dökümantasyon
 
-# Structure Analysis API — English Documentation
+## İçindekiler
 
-## Contents
-
-1. [Project Overview](#project-overview)
-2. [Quickstart](#quickstart)
-3. [Environment Variables (.env)](#environment-variables-env)
-4. [File Structure](#file-structure)
-5. [API Endpoint Reference](#api-endpoint-reference)
-6. [Core Modules & Services](#core-modules--services)
-7. [Security](#security)
-8. [Performance & Scalability](#performance--scalability)
-9. [Error Management and Logging](#error-management-and-logging)
-10. [Developer Guide](#developer-guide)
-11. [Frequently Asked Questions (FAQ)](#frequently-asked-questions-faq)
-12. [Contribution & License](#contribution--license)
-
----
-
-## Project Overview
-
-**Structure Analysis API** is a RESTful service that analyzes software project dependencies, detects architectural types (monolithic, microservices, serverless, modular monolith, event-driven, cqrs, micro-frontend, hybrid, etc.), and generates improvement suggestions.
-
-**Key capabilities:**
-- Architecture detection (monolithic, microservices, serverless, modular monolith, event-driven, cqrs, micro-frontend, hybrid, etc.)
-- Complexity score calculation based on folder structure, file tree, depth, complexity analysis, dependency analysis
-- Dependency scanning and vulnerability reporting
-- File upload, large archive processing (stream-based)
-- JWT + CSRF based secure authentication (Access + Refresh token)
-
-**Technology stack:** `Node.js (v18+)`, `TypeScript`, `Express`, `MongoDB (Mongoose)`, `Winston` (logging), `Multer` (uploads), `adm-zip`/`tar` (archive processing) / and more...
+1. [Proje Genel Bakış](#proje-genel-bak%C4%B1%C5%9F)
+2. [Hızlı Başlangıç (Quickstart)](#h%C4%B1zl%C4%B1-ba%C5%9Flang%C4%B1%C3%A7-quickstart)
+3. [Ortam Değişkenleri (.env)](#ortam-de%C4%9Fi%C5%9Fkenleri-env)
+4. [Dosya Yapısı](#dosya-yap%C4%B1s%C4%B1)
+5. [API Endpoint Referansı](#api-endpoint-referans%C4%B1)
+6. [Çekirdek Modüller & Servisler](#%C3%A7ekirdek-mod%C3%BCller--servisler)
+7. [Güvenlik](#g%C3%BCvenlik)
+8. [Performans & Ölçeklenebilirlik](#performans--%C3%B6l%C3%A7eklenebilirlik)
+9. [Hata Yönetimi ve Loglama](#hata-y%C3%B6netimi-ve-loglama)
+10. [Geliştirici Rehberi](#geli%C5%9Ftirme-rehberi)
+11. [Sık Karşılaşılan Sorunlar (FAQ)](#s%C4%B1k-kar%C5%9F%C4%B1la%C5%9F%C4%B1lan-sorunlar-faq)
+12. [Katkıda Bulunma & Lisans](#katk%C4%B1da-bulunma--lisans)
 
 ---
 
-## Quickstart
+## Proje Genel Bakış
 
-### Prerequisites
-- Node.js v18 or higher
-- MongoDB 6.x or higher
-- unzip/unrar helper packages (system-specific)
+**Structure Analysis API**, yazılım projelerinin bağımlılıklarını analiz eden, mimari tiplerini (monolit, mikroservis, serverless, modüler monolit, event-driven, cqrs, micro-frontend, hybrid vb.) tespit eden ve iyileştirme önerileri üreten RESTful bir servistir.
 
-### Installation
+**Ana yetenekler:**
+
+- Mimari tespiti (monolit, mikroservis, serverless, modüler monolit, event-driven, cqrs, micro-frontend, hybrid vb.)
+- Klasör yapısı, dosya ağacı, deriniği, karmaşıklık analizi, bağımlılık analizi üzerinden karmaşıklık skoru hesaplama
+- Bağımlılık taraması ve güvenlik açıkları raporlama
+- Dosya yükleme, büyük arşiv işleme (stream tabanlı)
+- JWT + CSRF tabanlı güvenli kimlik doğrulama (Access + Refresh token)
+
+**Teknoloji yığını:** `Node.js (v18+)`, `TypeScript`, `Express`, `MongoDB (Mongoose)`, `Winston` (loglama), `Multer` (yükleme), `adm-zip`/`tar` (arşiv işleme) / ve daha fazlası...
+
+---
+
+## Hızlı Başlangıç (Quickstart)
+
+### Ön koşullar
+
+- Node.js v18 veya üzeri
+- MongoDB 6.x veya üzeri
+- unzip / unrar yardımcı paketleri (sistem bazlı)
+
+### Kurulum
+
 ```bash
 git clone https://github.com/YakupHadutoglu/structure-analysis-api.git
 cd structure-analysis-api
 npm install
 cp .env.example .env
-# Edit .env content (listed below)
+# .env içeriğini düzenleyin (aşağıda listelenmiştir)
 npm run dev
 ```
 
-### Running the project (production)
+### Proje çalıştırma (production)
+
 ```bash
     npm start => "start": "node --max-old-space-size=8192 dist/server.js",
     npm run dev => "dev": "node --inspect --max-old-space-size=8192 -r ts-node/register server.ts",
@@ -59,9 +62,10 @@ npm run dev
 
 ---
 
-## Environment Variables (.env)
+## Ortam Değişkenleri (.env)
 
-Minimum required variables:
+Aşağıdaki değişkenler minimum gereklilerdir:
+
 ```
 PORT=3000
 NODE_ENV=devolopment
@@ -70,140 +74,157 @@ MONGO_URL=YOUR_MONGO_URL
 SALT_ROUNDS=10
 ACCESS_SECRET=YOUR_ACCESS_SECRET
 REFRESH_SECRET=YOUR_REFRESH_SECRET
+
 ```
 
-`NOTE:` Use strong/long secret values for production; keep keys confidential.
+`NOT:` Production ortamı için güçlü ve uzun secret değerleri kullanın; anahtarları gizli tutun.
 
 ---
 
-## API Endpoint Reference
+## API Endpoint Referansı
 
-### Authentication
-| Endpoint         | Method |        Auth         | Description                                      |
+### Kimlik Doğrulama
+
+| Endpoint         | Method |        Auth         | Açıklama                                      |
 | ---------------- | -----: | :-----------------: | --------------------------------------------- |
-| `/auth/register` |   POST |         ❌          | User registration (email, username, password)   |
-| `/auth/login`    |   POST |         ❌          | Login; generates access + refresh token         |
-| `/auth/logout`   |   POST |         ✅          | Terminates session, revokes refresh token       |
-| `/token/refresh` |   POST | ✅ (refresh cookie) | Access token refresh                            |
-| `/csrf-token`    |    GET |         ❌          | Get CSRF token (double submit)                  |
+| `/auth/register` |   POST |         ❌          | Kullanıcı kaydı (email, username, password)   |
+| `/auth/login`    |   POST |         ❌          | Giriş; access + refresh token üretir          |
+| `/auth/logout`   |   POST |         ✅          | Oturumu sonlandırır, refresh token iptal eder |
+| `/token/refresh` |   POST | ✅ (refresh cookie) | Access token yenileme                         |
+| `/csrf-token`    |    GET |         ❌          | CSRF token alma (double submit)               |
 
-### Analysis
-| Endpoint               | Method | Auth | Description                        |
+### Analiz
+
+| Endpoint               | Method | Auth | Açıklama                        |
 | ---------------------- | -----: | :--: | ------------------------------- |
-| `/analyzer/analyze`    |   POST |  ✅  | Upload and analyze project archive |
-| `/analyzer/status/:id` |    GET |  ✅  | Get analysis status/results (currently unavailable) |
-| `/analyzer/history`    |    GET |  ✅  | User's analysis history (currently unavailable) |
+| `/analyzer/analyze`    |   POST |  ✅  | Proje arşivi yükle ve analiz et |
+| `/analyzer/status/:id` |    GET |  ✅  | Analiz durumu / sonuçları alma (kolayca alınabilir şu anda mevcut değil)  |
+| `/analyzer/history`    |    GET |  ✅  | Kullanıcının analiz geçmişi (kolayca entegre edilebilir, şu anda mevcut değil)    |
 
-#### Example: Upload file and start analysis
+#### Örnek: Dosya yükleyip analiz başlatma
+
 ```bash
 curl -X POST "http://localhost:3000/analyzer/analyze" \
     POSTMAN RUNTİME
         Body => form-data
             Key => file | Value => your_project | Content type => application/zip
+
 ```
 
-## Core Modules & Services
+## Çekirdek Modüller & Servisler
 
-### File Processing
-- **FileUploadController**: Receives archives via Multer, performs SHA-256 verification, applies path traversal control.
-- **Supported archives:** `.zip`, `.tar`, `.tar.gz`, `.tgz`, `.rar` (only if extraction supported)
-- **Features**: Stream-based processing up to 2GB limit, temporary directory cleanup.
+### Dosya İşleme
+
+- **FileUploadController**: Multer ile gelen arşivleri alır, SHA-256 doğrulaması yapar, path traversal kontrolü uygular.
+- **Desteklenen arşivler:** `.zip`, `.tar`, `.tar.gz`, `.tgz`, `.rar` (sadece ekstraksiyon destekleniyorsa)
+- **Özellikler**: 2GB limite kadar stream tabanlı işleme, geçici dizin temizleme.
 
 ### Zip/Tar Parser
-- Stream-based extraction, MIME type control, parsing text-based files (js, ts, java, py, etc.).
 
-### Architecture Detection (Architecture Detector)
-- Indicator-based matching: file/folder names, dependency files (package.json, pom.xml, etc.), Docker/Compose presence, etc.
-- Weighting and confidence coefficient calculation for each indicator.
+- Stream tabanlı çıkarma, dosya tipi MIME kontrolü, metin tabanlı dosyaları (js, ts, java, py vb.) parse etme.
 
-### Complexity Analysis
-- Metrics: totalFiles, maxDepth, complexityScore (0-100), overcrowdedFolders (30+ files), cyclomatic approximations (estimated based on lines/function count).
-- Generate suggestions: `suggestions: string[]`.
+### Mimari Tespit (Architecture Detector)
 
-### Dependency Analysis
-- Supported package managers: npm/yarn (package.json), Maven (pom.xml), pip (requirements.txt), Gradle, composer, etc.
-- CVE database mapping (local or 3rd-party DB integration - easily integrable - optional).
+- Gösterge (indicator) tabanlı eşleştirme: dosya/klasör adları, bağımlılık dosyaları (package.json, pom.xml vs.), Docker/Compose varlığı vb.
+- Her gösterge için ağırlıklandırma ve güven katsayısı hesaplama.
 
----
-## Security
+### Karmaşıklık Analizi
 
-### Layered Security Approach
-The application is designed with a multi-layered security model to minimize potential attack vectors on both client and server sides.
+- Metrikler: totalFiles, maxDepth, complexityScore (0-100), overcrowdedFolders (30+ dosya), cyclomatic approximations (satır ve fonksiyon sayısına göre tahmini).
+- Öneriler oluşturma: `suggestions: string[]`.
+
+### Bağımlılık Analizi
+
+- Desteklenen paket yöneticileri: npm/yarn (package.json), Maven (pom.xml), pip (requirements.txt), Gradle, composer vb.
+- CVE veritabanı ile eşleme (local veya 3rd-party DB entegrasyonu - kolayca entegre edilebilir - opsiyonel).
 
 ---
+## Güvenlik
 
-## Measures:
+### Katmanlı Güvenlik Yaklaşımı
+
+Uygulama, çok katmanlı bir güvenlik modeli ile tasarlanmıştır. Amaç, hem istemci hem sunucu tarafında olası saldırı vektörlerini en aza indirmektir.
+
+---
+
+## Önlemler:
 
 **JWT (JSON Web Token):**
-- **Access Token**: Valid for 60 minutes.
-- **Refresh Token**: Valid for 7 days, stored in HTTP-only + Secure flag cookie.
-- Token signing with `jsonwebtoken` library, secret key in `.env`.
-- API endpoint access validated via middleware.
+- **Access Token**: 60 dakika geçerli.
+- **Refresh Token**: 7 gün geçerli, HTTP-only ve Secure flag ile cookie’de saklanır.
+- Token imzalama `jsonwebtoken` kütüphanesi ile yapılır, gizli anahtar `.env` dosyasında tutulur.
+- API endpoint’lerine erişimde middleware ile doğrulama yapılır.
 
-**CSRF (Cross-Site Request Forgery) Protection:**
-- Uses `csurf` middleware.
-- Double-submit cookie + custom header method applied.
-- CSRF token obtained from `/csrf-token` endpoint, sent with each request.
+**CSRF (Cross-Site Request Forgery) Koruması:**
+- `csurf` middleware’i kullanılır.
+- Double-submit cookie + custom header yöntemi uygulanır.
+- CSRF token `/csrf-token` endpoint’inden alınır, her istekle birlikte gönderilir.
 
 **Rate Limiting:**
-- `express-rate-limit` for per-IP request limiting.
-- Default limit: 20,000 requests in 15 minutes.
-- Optimized against brute force/DDoS attacks.
+- `express-rate-limit` ile IP başına istek sayısı sınırlandırılır.
+- Varsayılan olarak 15 dakika içinde 20.000 istek limiti uygulanır.
+- Brute force ve DDoS saldırılarını engellemek için optimize edilmiştir.
 
-**File Security:**
-- `multer` for file uploads, MIME type/extension control mandatory.
-- Dangerous extensions (`.exe`, `.sh`) automatically blocked.
-- File paths normalized with `path` module against path traversal attacks.
+**Dosya Güvenliği:**
+- `multer` ile dosya yükleme yapılır, MIME tipi ve uzantı kontrolü zorunludur.
+- `.exe`, `.sh` gibi tehlikeli uzantılar otomatik olarak engellenir.
+- Path traversal saldırılarına karşı dosya yolları `path` modülü ile normalize edilir.
 
-**Input Sanitization:**
-- `xss-clean` for XSS protection.
-- `express-mongo-sanitize` prevents NoSQL injection.
-- Additional `sanitizeRequest` middleware cleans body/query/params data.
+**Girdi Temizleme:**
+- `xss-clean` ile XSS saldırılarına karşı koruma sağlanır.
+- `express-mongo-sanitize` ile NoSQL injection önlenir.
+- Ek olarak `sanitizeRequest` middleware’i ile body, query ve params verileri temizlenir.
 
-**HTTP and Session Security:**
-- `helmet` enforces Content Security Policy (CSP) and cross-origin policies.
-- `express-session` manages sessions, enables Secure flag in production.
-- `noCache` middleware prevents sensitive data caching in browsers.
+**HTTP ve Session Güvenliği:**
+- `helmet` ile Content Security Policy (CSP) ve cross-origin politikaları uygulanır.
+- `express-session` ile session yönetimi yapılır, production’da Secure flag aktif edilir.
+- `noCache` middleware’i ile hassas verilerin tarayıcıda cache’lenmesi engellenir.
 
-**Logging and Monitoring:**
-- `winston` and `morgan` for request/response logging.
-- Daily log files rotated with `winston-daily-rotate-file`.
-- Requesting IPs geolocated with `geoip-lite` and logged.
+**Loglama ve İzleme:**
+- `winston` ve `morgan` ile request/response loglama yapılır.
+- Günlük dosyaları `winston-daily-rotate-file` ile döngüsel olarak saklanır.
+- İstek yapan IP’ler `geoip-lite` ile konumlandırılır ve loglanır.
 
-**Additional Security Measures:**
-- HTTP headers hardened with `helmet`.
-- JSON parsing with `body-parser` includes size limits.
-- Unauthorized accesses logged and returned with appropriate HTTP codes.
+**Ek Güvenlik Önlemleri:**
+- HTTP header’lar `helmet` ile güçlendirilir.
+- Tüm gelen JSON verisi `body-parser` ile parse edilirken boyut limitleri uygulanır.
+- Yetkisiz erişimler merkezi hata yakalayıcı ile loglanır ve uygun HTTP kodları ile döndürülür.
 
-## Performance & Scalability
 
-### Optimizations
-1. **Parallel File Processing**: Configurable concurrency limit (e.g. 50)
-2. **Stream-Based Extraction**: Minimizes memory usage during archive extraction
-3. **Memory Protection**: Maximum extracted content size (e.g. 5GB) and extraction timeout (120s)
-4. **Job Queue**: Analyses processed in background workers (Redis/Bull/Bee-Queue integration recommended)
-5. **Cache**: Artifact caching for repeated analyses (hash-based)
+## Performans & Ölçeklenebilirlik
 
-### Sample Performance Targets
-- Average: ~300 files/second processing (hardware-dependent)
-- Max concurrent analyses: hardware-dependent (horizontally scalable with producer/worker architecture)
+### Optimizasyonlar
+
+1. **Paralel Dosya İşleme**: Konfigüre edilebilir concurrency limit (ör. 50)
+2. **Stream Tabanlı Çıkarma**: Arşiv çıkarma sırasında bellek kullanımı minimize edilir
+3. **Bellek Koruması**: Maksimum çıkarılan içerik boyutu (ör. 5GB) ve extraction timeout (120s)
+4. **İş Kuyruğu**: Analizler arka planda worker ile işlenir (Redis / Bull / Bee-Queue entegrasyonu önerilir)
+5. **Cache**: Tekrarlanan analizlerde artifact caching (hash tabanlı)
+
+### Örnek Performans Hedefleri
+
+- Ortalama: \~300 dosya/saniye işleme (donanıma bağlı)
+- Maks eşzamanlı analiz: donanıma göre (producer/worker mimarisi ile yatay ölçeklenebilir)
 
 ---
 
-## Error Management and Logging
+## Hata Yönetimi ve Loglama
 
-### Error Codes
-|  Code | Key                    | Description                          |
+### Hata Kodları
+
+|  Kod | Anahtar                    | Açıklama                          |
 | ---: | -------------------------- | --------------------------------- |
-| 1001 | INVALID_ARCHIVE            | Invalid archive format            |
-| 2001 | ARCHITECTURE_UNKNOWN       | Architecture not detected         |
-| 3001 | COMPLEXITY_CALC_FAILED     | Complexity calculation failed     |
-| 4001 | DEPENDENCY_ANALYSIS_FAILED | Dependency analysis error         |
+| 1001 | INVALID_ARCHIVE            | Geçersiz arşiv formatı            |
+| 2001 | ARCHITECTURE_UNKNOWN       | Mimari tespit edilemedi           |
+| 3001 | COMPLEXITY_CALC_FAILED     | Karmaşıklık hesaplama başarısız   |
+| 4001 | DEPENDENCY_ANALYSIS_FAILED | Bağımlılık analizi sırasında hata |
 
-### Logging
-- Winston + daily-rotate for log management
-- Log levels: `error`, `warn`, `info`, `debug`
-- Sample error log (JSON):
+### Loglama
+
+- Winston + daily-rotate ile log yönetimi
+- Log seviyeleri: `error`, `warn`, `info`, `debug`
+- Hata log'u örneği (JSON):
+
 ```json
 {
   "timestamp": "2025-08-15T10:30:00Z",
@@ -217,62 +238,67 @@ The application is designed with a multi-layered security model to minimize pote
 ```
 
 ---
-### Coding Standards
+### Kodlama Standartları
 
-This project follows **SOLID principles**, **TypeScript strict mode**, and industry-standard rules for sustainability, readability, and maintainability.
 
----
-
-### General Principles
-- **SOLID Principles**:
-  - **S**ingle Responsibility: Each class/function has single responsibility.
-  - **O**pen/Closed: Code open for extension, closed for modification.
-  - **L**iskov Substitution: Derived classes substitutable for base classes.
-  - **I**nterface Segregation: Small purpose-specific interfaces over large ones.
-  - **D**ependency Inversion: High-level modules not dependent on low-level modules.
-
-- **Functions**: Short, readable, single-responsibility principle compliant.
-- **Comments**: No unnecessary comments except complex algorithms. Self-explanatory code.
-- **Magic Number/String**: Constants stored in `constants` or `config` files.
+Bu proje, sürdürülebilirlik, okunabilirlik ve bakım kolaylığı sağlamak için **SOLID prensipleri**, **TypeScript strict modu** ve endüstri standartlarına uygun kurallarla geliştirilmiştir.
 
 ---
 
-### TypeScript Standards
-- **strict mode**: `strict: true` in `tsconfig.json`.
-- **Type Safety**: No `any` type (with explanation if mandatory).
-- **Interface & Type**: `interface` for API data structures, `type` for complex types.
-- **Literal Union over Enum**: String literal union preferred over unnecessary enums.
-- **Readonly**: `readonly` for immutable fields.
-- **Optional Chaining & Nullish Coalescing**: Modern TS operators for null/undefined checks.
+### Genel İlkeler
+
+- **SOLID Prensipleri**:
+  - **S**ingle Responsibility: Her sınıf/fonksiyon tek bir sorumluluğa sahip olmalı.
+  - **O**pen/Closed: Kod, genişletmeye açık, değiştirmeye kapalı olmalı.
+  - **L**iskov Substitution: Türetilmiş sınıflar, base sınıfın yerine sorunsuzca kullanılabilmeli.
+  - **I**nterface Segregation: Büyük interface’ler yerine küçük, amaca yönelik interface’ler kullanılmalı.
+  - **D**ependency Inversion: Yüksek seviye modüller, düşük seviye modüllere doğrudan bağımlı olmamalı.
+
+- **Fonksiyonlar**: Tek sorumluluk ilkesine uygun, kısa ve okunabilir olmalı.
+- **Yorum Satırları**: Karmaşık algoritmalar dışında gereksiz yorum satırları eklenmemeli. Kod, kendi kendini açıklamalı.
+- **Magic Number/String**: Sabitler `constants` veya `config` dosyalarında tutulmalı.
 
 ---
 
-## Frequently Asked Questions (FAQ)
+### TypeScript Standartları
 
-**Q:** I get `INVALID_ARCHIVE` error when uploading archive.
-**A:** Archive type may be unsupported or corrupted. Common causes: oversized file (>2GB), encrypted archive, or tar/zip incompatibility.
-
-**Q:** Analysis takes too long or times out.
-**A:** Worker queue and higher resources needed for large projects. Check `EXTRACTION_TIMEOUT` and `CONCURRENCY_LIMIT` values.
-
-**Q:** I get CSRF token error.
-**A:** Get token from `/csrf-token` endpoint and add to `X-CSRF-Token` header; also check cookie sameSite/secure settings.
+- **strict mode**: `tsconfig.json` içinde `strict: true` aktif.
+- **Tip Güvenliği**: `any` tipi kullanılmaz (zorunlu durumlarda açıklama ile).
+- **Interface & Type**: API veri yapıları için `interface`, karmaşık tipler için `type` kullanılır.
+- **Enum Yerine Literal Union**: Gereksiz enum kullanımı yerine string literal union tercih edilir.
+- **Readonly**: Değiştirilmeyecek alanlar için `readonly` kullanılır.
+- **Optional Chaining & Nullish Coalescing**: Null/undefined kontrolleri için modern TS operatörleri kullanılır.
 
 ---
 
-## Contribution & License
-- **Contribution:** Fork → branch → commit → PR. Describe problem solved and testing in PR description.
-- **Code Review:** Each PR requires at least one reviewer approval.
+## Sık Karşılaşılan Sorunlar (FAQ)
 
-**License:** MIT © 2025 Structure Analysis - Yakup Hadutoğlu
+**Q:** Arşiv yüklediğimde `INVALID_ARCHIVE` hatası alıyorum.
+**A:** Arşiv tipi desteklenmeyebilir veya bozuk olabilir. Ortak nedenler: çok büyük dosya (2GB üzeri), şifreli arşiv, veya tar/zip uyumsuzluğu.
+
+**Q:** Analiz çok uzun sürüyor veya zaman aşımına uğruyor.
+**A:** Büyük projeler için worker kuyruğu ve daha yüksek kaynaklar gerekir. `EXTRACTION_TIMEOUT` ve `CONCURRENCY_LIMIT` değerlerini kontrol edin.
+
+**Q:** CSRF token hatası alıyorum.
+**A:** `/csrf-token` endpoint'inden token alıp `X-CSRF-Token` header'ına eklemelisiniz; ayrıca cookie'nin sameSite ve secure ayarlarını kontrol edin.
 
 ---
 
-## Appendices
+## Katkıda Bulunma & Lisans
 
-### Real JSON Report (full)
+- **Katkıda bulunma:** Fork -> branch -> commit -> PR. Lütfen PR açıklamasında hangi problemin çözüldüğünü ve nasıl test edildiğini yazın.
+- **Kod İnceleme:** Her PR en az bir reviewer tarafından onaylanmalı.
+
+**Lisans:** MIT © 2025 Structure Analysis - Yakup Hadutoğlu
+
+---
+
+## Ekler
+
+### Gerçek JSON Raporu (tam)
+
 ```json
-{
+    {
     "architecture": {
         "type": "microservices",
         "confidence": 63,
@@ -303,11 +329,11 @@ This project follows **SOLID principles**, **TypeScript strict mode**, and indus
             "hybrid": []
         },
         "suggestions": [
-            "✅ Your project shows strong Microservices Architecture.",
-            "   \"To strengthen this architecture:",
-            "   - Use API Gateway for inter-service communication",
-            "   - Apply domain-driven design for service independence",
-            "   - Use separate data stores for each service"
+            "✅ Projeniz güçlü bir Mikroservis Mimarisi mimarisi gösteriyor.",
+            "   \"Bu mimariyi güçlendirmek için:",
+            "   - Servisler arası iletişim için API Gateway kullanın",
+            "   - Servis bağımsızlığını artırmak için domain-driven design uygulayın",
+            "   - Her servis için ayrı veri depoları kullanın"
         ]
     },
     "fileTree": {
@@ -766,8 +792,8 @@ This project follows **SOLID principles**, **TypeScript strict mode**, and indus
             "3": 25
         },
         "suggestions": [
-            "27 empty folders detected. Simplify project structure by removing them.",
-            "High complexity score (100.00/100) may complicate project maintenance. Consider increasing modularization and abstraction levels.",
+            "27 adet boş klasör tespit edildi. Bunları kaldırarak proje yapısını basitleştirebilirsiniz.",
+            "Yüksek karmaşıklık skoru (100.00/100) proje bakımını zorlaştırabilir. Modülerleştirme ve soyutlama seviyelerini artırmayı düşünün.",
             "High complexity score (100.00/100) may impact maintainability. Consider increasing modularization and abstraction levels."
         ]
     },
@@ -788,9 +814,9 @@ This project follows **SOLID principles**, **TypeScript strict mode**, and indus
         }
     },
     "suggestions": [
-        "Project has very high complexity (100/100). Urgent refactoring needed, focus on modularization and separation of concerns.",
-        "Project complexity (100/100) is high. Consider focusing more on modular structure and separation of concerns to facilitate future maintenance.",
-        "Create \".gitignore\" file to avoid adding unnecessary files (e.g. node_modules, dist) to Git repositories."
+        "Proje genel olarak çok yüksek karmaşıklığa sahip (100/100). Acilen refactoring düşünülmeli, modülerizasyon ve sorumluluk ayrılığı prensiplerine odaklanılmalı.",
+        "Proje karmaşıklığı (100/100) yüksek seviyede. Gelecekteki bakımı kolaylaştırmak için modüler yapılandırmaya ve sorumluluk ayrılığına daha fazla özen gösterilebilir.",
+        "Git depolarına gereksiz dosyaları (örn: node_modules, dist) eklememek için bir \".gitignore\" dosyası oluşturun."
     ],
     "dependencyReport": {
         "technologies": [
